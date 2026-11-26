@@ -1,0 +1,66 @@
+.hero-collage {
+  display: grid;
+  grid-template: repeat(12, minmax(0, 1fr)) / repeat(12, minmax(0, 1fr));
+  aspect-ratio: 1.18;
+  gap: clamp(4px, 0.6vw, 9px);
+  width: 100%;
+  max-width: 42rem;
+  justify-self: center;
+}
+
+.hero-collage__tile {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border-radius: clamp(6px, 1.1vw, 18px);
+  object-fit: cover;
+}
+
+.hero-collage__tile--dance { grid-area: 1 / 2 / 6 / 8; }
+.hero-collage__tile--painting { grid-area: 2 / 8 / 6 / 11; }
+.hero-collage__tile--swimming { grid-area: 3 / 11 / 6 / 13; }
+.hero-collage__tile--boxing { grid-area: 6 / 1 / 10 / 5; }
+.hero-collage__tile--guitar { grid-area: 6 / 5 / 10 / 10; }
+.hero-collage__tile--yoga { grid-area: 6 / 10 / 10 / 13; }
+.hero-collage__tile--robotics { grid-area: 10 / 2 / 13 / 6; }
+.hero-collage__tile--languages { grid-area: 10 / 6 / 13 / 10; }
+.hero-collage__tile--theater { grid-area: 10 / 10 / 12 / 13; }
+
+@media (max-width: 639px) {
+  .hero-collage {
+    grid-template: minmax(0, 1fr) / repeat(3, minmax(0, 1fr));
+    aspect-ratio: 3.2;
+  }
+
+  .hero-collage__frame {
+    display: none;
+    grid-area: auto;
+  }
+
+  .hero-collage__tile--dance,
+  .hero-collage__tile--painting,
+  .hero-collage__tile--guitar {
+    display: block;
+  }
+}
+
+.hero-collage__frame {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+}
+
+.hero-collage__bow {
+  position: absolute;
+  top: 4px;
+  left: -5px;
+  z-index: 1;
+  width: clamp(83.52px, 8.64vw, 126.72px);
+  height: auto;
+  pointer-events: none;
+  transform-origin: 46% 75%;
+  transform: translate(-46%, -75%) rotate(12deg);
+  filter: drop-shadow(0 3px 3px #30251965);
+}
+
