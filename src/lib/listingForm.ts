@@ -58,6 +58,34 @@ export const LISTING_AREAS = [
   { value: 'Other', key: 'otherArea' },
 ] as const;
 
+// Legacy or alternative spellings of areas that should match a listing area.
+const AREA_ALIASES: Record<string, string> = {
+  vyronas: 'Vironas',
+  vironas: 'Vironas',
+  βυρωνας: 'Vironas',
+};
+
+function normalizeAreaName(area: string) {
+  return area.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+// Maps a stored area (including legacy spellings such as "Vyronas") to the
+// value used by the "List Your School" form, so filters treat them as one area.
+export function canonicalArea(area: string | null | undefined): string {
+  const raw = (area ?? '').trim();
+  const normalized = normalizeAreaName(raw);
+  if (!normalized) return '';
+  if (AREA_ALIASES[normalized]) return AREA_ALIASES[normalized];
+  return LISTING_AREAS.find(({ value }) => normalizeAreaName(value) === normalized)?.value ?? raw;
+}
+
+// Area choices for the search filters: the full "List Your School" area list,
+// plus any other areas existing schools use, without duplicates.
+export function filterAreaOptions(schoolAreas: (string | null | undefined)[]): string[] {
+  const areas = LISTING_AREAS.map(({ value }) => value).filter((value) => value !== 'Other');
+  return [...new Set([...areas, ...schoolAreas.map(canonicalArea)])].filter((area) => area && area !== 'Other');
+}
+
 export const ANY_DAY = 'any-day';
 
 export const WEEKDAYS = [
