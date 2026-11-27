@@ -89,7 +89,7 @@ function AppContent() {
 
   const [view, setView] = useState<View>(() => signupReturn.memberDestination || signupReturn.signupSession ? 'student-return' : 'browse');
   const [browseMode, setBrowseMode] = useState<BrowseMode>('home');
-  const [scrollToResults, setScrollToResults] = useState<boolean | 'how-it-works'>(false);
+  const [scrollToResults, setScrollToResults] = useState<boolean | 'how-it-works' | 'category-results'>(false);
 
   useEffect(() => {
     if (view !== 'browse' || !scrollToResults) return;
@@ -199,8 +199,7 @@ function AppContent() {
   const selectedPhotos = (filterSchool && schoolPhotoLists.get(filterSchool)) || [];
   const approvedScheduleRows = useMemo(() => {
     if (!selectedSchool) return [];
-    const approved = classes.filter((cls) => selectedSchool.storeIds.has(cls.store_id)
-      && (!selectedClassGroup || classGroup(cls) === selectedClassGroup));
+    const approved = classes.filter((cls) => selectedSchool.storeIds.has(cls.store_id));
     return combineSchoolSchedules(selectedSchool.stores).rows.flatMap((row) => {
       const match = approved.find((cls) => cls.title.normalize('NFC').trim().toLowerCase() === row.lesson.normalize('NFC').toLowerCase()
         && (cls.schedule_ages == null || cls.schedule_ages === row.ages)
@@ -208,7 +207,7 @@ function AppContent() {
         && (cls.schedule_availability == null || cls.schedule_availability === row.availability));
       return match ? [{ ...row, monthlyPackages: match.monthly_packages }] : [];
     });
-  }, [classes, selectedSchool, selectedClassGroup]);
+  }, [classes, selectedSchool]);
 
   const filteredClasses = useMemo(() => {
     const q = normalizeSearch(search);
@@ -245,12 +244,6 @@ function AppContent() {
   const scheduledCards = new Map(filteredScheduledClasses.map((card) => [card.cls.id, card]));
   const visibleClassCount = filteredClasses.length;
   const availableClassCount = filteredClasses.filter((cls) => cls.capacity > 0).length;
-  const categorySchools = [...schoolGroups].flatMap(([key, { school, storeIds }]) => {
-    if (browseMode !== 'categories' || !selectedClassGroup) return [];
-    const titles = [...new Set(filteredClasses.filter((cls) => storeIds.has(cls.store_id)).map((cls) => cls.title))];
-    return titles.length ? [{ key, school, titles }] : [];
-  });
-
   const schoolQuery = normalizeSearch(search);
   const filteredSchools = [...schoolGroups].filter(([, { school, stores, storeIds }]) => {
     const schoolArea = school.area === 'Vyronas' ? 'Vironas' : school.area;
@@ -330,11 +323,6 @@ function AppContent() {
       goTo('student-account');
       return;
     }
-    if (selectedClassGroup) {
-      setFilterSchool(null);
-      browseResults('categories');
-      return;
-    }
     const previous = schoolListFilters.current;
     clearFilters();
     if (previous) {
@@ -347,13 +335,12 @@ function AppContent() {
     browseResults('schools');
   };
 
-  const handleSelectSchool = (schoolKey: string, group: ClassGroup | null = null) => {
+  const handleSelectSchool = (schoolKey: string) => {
     schoolAccountOrigin.current = null;
     if (!filterSchool) {
       schoolListFilters.current = { search, area: filterArea, category: filterCategory, age: filterAge };
     }
     clearFilters();
-    setSelectedClassGroup(group);
     setFilterSchool(schoolKey);
     setLayout('list');
     browseResults('classes');
@@ -443,7 +430,7 @@ function AppContent() {
 
   const renderHome = () => (
     <>
-      {browseMode !== 'categories' && !selectedClassGroup && <Hero
+      {browseMode !== 'categories' && <Hero
         schoolsOnly={browseMode === 'schools'}
         schoolAreas={schools.map(({ area }) => area).filter((area) => area && area !== 'Other')}
         onSearch={setSearch}
@@ -479,7 +466,10 @@ function AppContent() {
             {CLASS_GROUPS.map(({ key, icon: Icon }) => (
               <li key={key}>
                 <button type="button" aria-pressed={selectedClassGroup === key}
-                  onClick={() => setSelectedClassGroup(key)}
+                  onClick={() => {
+                    setSelectedClassGroup(key);
+                    setScrollToResults('category-results');
+                  }}
                   className={`flex h-full min-h-20 w-full items-center gap-2 rounded-full border px-3 py-2 text-left text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 sm:gap-3 sm:px-4 ${selectedClassGroup === key ? 'border-teal-700 bg-teal-100 text-teal-900' : 'border-teal-200 bg-white text-teal-900 hover:bg-teal-50'}`}>
                   <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-teal-50 sm:h-10 sm:w-10">
                     <Icon aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -498,30 +488,15 @@ function AppContent() {
           </button>
 
           {selectedClassGroup && (
-            <div className="mt-8 border-t border-stone-200 pt-6">
+            <div id="category-results" className="mt-8 scroll-mt-36 border-t border-stone-200 pt-6 lg:scroll-mt-24">
               <h2 className="mb-4 text-xl font-bold">{t(`browse.${selectedClassGroup}`)}</h2>
-              {loading ? <p role="status">{t('browse.loadingSchools')}</p>
+              {loading ? <p role="status">{t('browse.loading')}</p>
                 : loadError ? <p role="alert">{t('browse.loadError')}</p>
-                : categorySchools.length === 0 ? <p>{t('browse.noSchools')}</p>
+                : filteredClasses.length === 0 ? <p>{t('browse.noResults')}</p>
                 : (
-                  <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {categorySchools.map(({ key, school, titles }) => {
-                      const cover = schoolPhotoLists.get(key)?.[0];
-                      return (
-                        <li key={key}>
-                          <button type="button" onClick={() => handleSelectSchool(key, selectedClassGroup)}
-                            className="flex h-full w-full items-center gap-3 rounded-xl border border-stone-200 bg-white p-3 text-left hover:border-teal-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-700">
-                            {cover && <img src={cover} alt="" loading="lazy" className="h-16 w-16 shrink-0 rounded-lg object-cover" />}
-                            <span className="min-w-0 break-words">
-                              <strong className="block">{school.name}</strong>
-                              <span className="block text-sm text-stone-600">{tArea(school.area)}</span>
-                              <span className="mt-1 block text-xs text-stone-600">{titles.join(' · ')}</span>
-                            </span>
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    {filteredClasses.map(renderClassCard)}
+                  </div>
                 )}
             </div>
           )}
@@ -589,7 +564,7 @@ function AppContent() {
         </section>
       )}
 
-      <section hidden={browseMode !== 'classes' && !showSearchResults} id="classes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 scroll-mt-28 md:scroll-mt-20">
+      {browseMode !== 'categories' && <section hidden={browseMode !== 'classes' && !showSearchResults} id="classes" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 scroll-mt-28 md:scroll-mt-20">
         {selectedSchool && (
           <button type="button" onClick={handleBackToSchools}
             className="mb-5 inline-flex items-center gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-700">
@@ -675,7 +650,7 @@ function AppContent() {
         ) : layout === 'map' ? (
           <div className="space-y-3">
             <p className="text-sm text-stone-500">{t('browse.mapHint')}</p>
-            <MapView schools={mapSchools} onSelectClass={handleSelectClass} onSelectSchool={(key) => handleSelectSchool(key, selectedClassGroup)} />
+            <MapView schools={mapSchools} onSelectClass={handleSelectClass} onSelectSchool={handleSelectSchool} />
           </div>
         ) : visibleClassCount === 0 && selectedSchoolWithoutClasses ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -724,7 +699,7 @@ function AppContent() {
           <SchoolReviews reviews={reviews.filter((review) => selectedSchool.storeIds.has(review.store_id) && (isAdmin || !review.hidden))}
             failed={reviewsFailed} admin={isAdmin} onModerate={moderateReview} />
         )}
-      </section>
+      </section>}
 
       <HowItWorks onListSchool={openListing} onBrowseSchools={handleBrowseSchools} onJoin={user ? undefined : () => goTo('student-auth')} />
     </>
