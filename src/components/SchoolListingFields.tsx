@@ -1,5 +1,5 @@
 import { ScheduleAvailabilityInput, ScheduleCostInput, ScheduleDaysInput, ScheduleDayTimesInput } from '@/components/ScheduleInputs';
-import type { Dispatch, SetStateAction } from 'react';
+import { useId, useState, type Dispatch, type SetStateAction } from 'react';
 import { Accessibility, Plus, Trash2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { ImageUploadField } from '@/components/ImageUploadField';
@@ -30,6 +30,9 @@ const cellCls =
 
 export function SchoolListingFields({ values, onChange, onImageUploadingChange, onOpenPrivacy, showPrivacy = true, showSchedule = true }: Props) {
   const { t } = useI18n();
+  const areaId = useId();
+  const [customAreaSelected, setCustomAreaSelected] = useState(false);
+  const usesCustomArea = customAreaSelected || Boolean(values.area && (values.area === 'Other' || !LISTING_AREAS.some(({ value }) => value === values.area)));
 
   const textOf =
     (field: TextField) =>
@@ -80,16 +83,25 @@ export function SchoolListingFields({ values, onChange, onImageUploadingChange, 
           </select>
         </div>
         <div>
-          <label className={studioLabelCls}>{t('lf.area')}</label>
-          <select value={values.area} onChange={textOf('area')} required className={studioInputCls}>
+          <label htmlFor={areaId} className={studioLabelCls}>{t('lf.area')}</label>
+          <select id={areaId} value={usesCustomArea ? 'Other' : values.area} onChange={(event) => {
+            setCustomAreaSelected(event.target.value === 'Other');
+            textOf('area')(event);
+          }} required className={studioInputCls}>
             <option value="" disabled>{t('lf.selectArea')}</option>
-            {LISTING_AREAS.map((a) => (
-              <option key={a.value} value={a.value}>{t(`lf.${a.key}`)}</option>
+            {LISTING_AREAS.map((area) => (
+              <option key={area.value} value={area.value}>{t(`lf.${area.key}`)}</option>
             ))}
-            {values.area && !LISTING_AREAS.some((a) => a.value === values.area) && (
-              <option value={values.area}>{values.area}</option>
-            )}
           </select>
+          {usesCustomArea && (
+            <label className="mt-2 block">
+              <span className={studioLabelCls}>{t('lf.customArea')}</span>
+              <input value={values.area === 'Other' ? '' : values.area} onChange={(event) => {
+                setCustomAreaSelected(true);
+                textOf('area')(event);
+              }} required pattern=".*\S.*" maxLength={100} className={studioInputCls} />
+            </label>
+          )}
         </div>
       </div>
 

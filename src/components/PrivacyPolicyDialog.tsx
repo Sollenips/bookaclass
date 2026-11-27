@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
-import { ChevronDown, X } from 'lucide-react';
-import { SchoolPlanCards } from '@/components/HowItWorks';
+import { X } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { PRIVACY_POLICY_HTML } from '@/lib/privacyPolicy';
 import { SCHOOL_PRIVACY_HTML } from '@/lib/schoolPrivacy';
@@ -53,17 +52,6 @@ export function PrivacyPolicyDialog({ open, onClose, forSchools = false }: Props
           className="text-stone-600 [&_p]:text-sm [&_p]:leading-relaxed [&_p]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-stone-800 [&_h3]:mt-5 [&_h3]:mb-1.5 [&_a]:text-teal-700 [&_a]:underline"
           dangerouslySetInnerHTML={{ __html: (forSchools ? SCHOOL_PRIVACY_HTML : PRIVACY_POLICY_HTML)[lang] }}
         />
-        {forSchools && (
-          <details className="group mt-4">
-            <summary className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-2.5 text-sm font-semibold text-teal-800 hover:bg-teal-100 [&::-webkit-details-marker]:hidden">
-              {t('schoolPlans.disclosure')}
-              <ChevronDown aria-hidden="true" className="h-4 w-4 group-open:rotate-180" />
-            </summary>
-            <div className="mt-4">
-              <SchoolPlanCards />
-            </div>
-          </details>
-        )}
       </div>
     </div>
   );

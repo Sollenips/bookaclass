@@ -2,6 +2,8 @@ export const AREAS = [
   'Pagrati',
   'Ilioupoli',
   'Zografou',
+  'Acharnes',
+  'Kato Patisia',
   'Vironas',
   'Kaisariani',
 ] as const;

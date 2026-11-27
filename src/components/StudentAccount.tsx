@@ -6,7 +6,7 @@ import { isStrongPassword, MIN_PASSWORD_LENGTH, PROFILE_AVATARS, profileAvatar, 
 import { useI18n } from '@/lib/i18n';
 import { supabase, type ClassItem, type RequestKind, type RequestStatus, type Store } from '@/lib/supabase';
 
-const NEARBY: Record<Area, readonly Area[]> = {
+const NEARBY: Partial<Record<Area, readonly Area[]>> = {
   Pagrati: ['Vironas', 'Kaisariani'],
   Ilioupoli: ['Vironas'],
   Zografou: ['Kaisariani'],

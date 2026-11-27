@@ -56,7 +56,7 @@ async function submitSchoolApplication(form: ListingFormValues, token: string) {
     studio_description: form.description.trim(),
     email: form.email.trim().toLowerCase(),
     phone: form.phone.trim(),
-    area: form.area,
+    area: form.area.trim(),
     category: APPLICATION_CATEGORIES[form.category] ?? form.category,
     address: form.address.trim(),
     school_manager: form.school_manager.trim(),

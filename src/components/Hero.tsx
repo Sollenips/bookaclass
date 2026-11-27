@@ -6,6 +6,7 @@ import './HolidayTree.css';
 
 type Props = {
   schoolsOnly: boolean;
+  schoolAreas: string[];
   onSearch: (value: string) => void;
   onSearchSubmit: () => void;
   searchValue: string;
@@ -21,6 +22,7 @@ type Props = {
 
 export function Hero({
   schoolsOnly,
+  schoolAreas,
   onSearch,
   onSearchSubmit,
   searchValue,
@@ -130,7 +132,7 @@ export function Hero({
                 </span>
                 <select value={filterArea} onChange={(e) => setFilterArea(e.target.value)} className={selectClass}>
                   <option value="all">{t('filter.allAreas')}</option>
-                  {AREAS.map((area) => (
+                  {[...new Set([...AREAS, ...schoolAreas])].map((area) => (
                     <option key={area} value={area}>
                       {tArea(area)}
                     </option>

@@ -12,7 +12,7 @@ import { RequestForm, RequestSuccess } from '@/components/RequestForm';
 import { WaitlistForm } from '@/components/WaitlistForm';
 import { MapView, SchoolLocationMap } from '@/components/MapView';
 import { StudentAccount, type AccountSection } from '@/components/StudentAccount';
-import { HowItWorks, SchoolPlansPage } from '@/components/HowItWorks';
+import { HowItWorks } from '@/components/HowItWorks';
 import { Footer } from '@/components/Footer';
 import { StudioListingModal } from '@/components/StudioListingModal';
 import { AuthPage } from '@/components/AuthPage';
@@ -26,7 +26,7 @@ import { signupReturn, supabase, type ClassItem, type RequestKind, type Store } 
 
 type BrowseMode = 'home' | 'classes' | 'schools';
 
-type View = 'student-return' | 'student-auth' | 'student-account' | 'school-plans' | 'browse' | 'detail' | 'request' | 'waitlist' | 'success' | 'auth' | 'dashboard';
+type View = 'student-return' | 'student-auth' | 'student-account' | 'browse' | 'detail' | 'request' | 'waitlist' | 'success' | 'auth' | 'dashboard';
 
 const AGE_RANGES: Record<string, [number, number]> = {
   '4': [4, 6],
@@ -49,6 +49,29 @@ function normalizeSearch(value: string) {
 
 function includesSearch(query: string, ...values: (string | null | undefined)[]) {
   return !query || values.some((value) => value != null && normalizeSearch(value).includes(query));
+}
+
+const CLASS_GROUPS = [
+  { key: 'groupMartial', categories: ['Martial Arts', 'Kick Boxing'] },
+  { key: 'groupDance', categories: ['Dance'] },
+  { key: 'groupMusic', categories: ['Music'] },
+  { key: 'groupArt', categories: ['Art', 'Ceramics', 'Painting', 'Crafts'] },
+  { key: 'groupLanguages', categories: ['Languages', 'Foreign Languages'] },
+  { key: 'groupSports', categories: ['Sports', 'Yoga', 'Swimming', 'Tennis', 'Basketball', 'Gym', 'Football', 'Cross Training', 'Pilates'] },
+  { key: 'groupTheater', categories: ['Theater', 'Theatre'] },
+  { key: 'groupStudy', categories: ['Study', 'Tutoring', 'School Support'] },
+  { key: 'groupOther', categories: [] },
+] as const;
+
+type ClassGroup = (typeof CLASS_GROUPS)[number]['key'];
+
+function classGroup(lesson: ClassItem): ClassGroup {
+  const activity = normalizeSearch(`${lesson.category} ${lesson.title}`);
+  if (/μελετη|σχολικη υποστηριξη|ενισχυτικη διδασκαλια|\b(?:study|tutoring|school support)\b/u.test(activity)) return 'groupStudy';
+  if (/κεραμικ|πηλο|\b(?:ceramics?|pottery|clay)\b/u.test(activity)) return 'groupArt';
+  if (matchesInterest('Cross Training', lesson.category, lesson.title)) return 'groupSports';
+  return CLASS_GROUPS.find(({ categories }) =>
+    categories.some((category) => matchesInterest(category, lesson.category)))?.key ?? 'groupOther';
 }
 
 function AppContent() {
@@ -88,6 +111,7 @@ function AppContent() {
   const showSearchResults = browseMode === 'home' && Boolean(normalizeSearch(search));
   const [filterArea, setFilterArea] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
+  const [selectedClassGroup, setSelectedClassGroup] = useState<ClassGroup | 'all'>('all');
   const [filterAge, setFilterAge] = useState('all');
   const [filterSchool, setFilterSchool] = useState<string | null>(null);
 
@@ -216,8 +240,25 @@ function AppContent() {
     }];
   });
 
+  const scheduledCards = new Map(filteredScheduledClasses.map((card) => [card.cls.id, card]));
+  const showClassGroups = browseMode === 'classes' && !selectedSchool && layout === 'list';
+  const classesByGroup = new Map<ClassGroup, ClassItem[]>();
+  if (showClassGroups) {
+    for (const lesson of filteredClasses) {
+      const key = classGroup(lesson);
+      const items = classesByGroup.get(key);
+      if (items) items.push(lesson);
+      else classesByGroup.set(key, [lesson]);
+    }
+  }
+  const classGroups = CLASS_GROUPS.flatMap(({ key }) => {
+    const items = classesByGroup.get(key);
+    return items ? [{ key, items }] : [];
+  });
+  const activeClassGroup = showClassGroups && selectedClassGroup !== 'all' && classesByGroup.has(selectedClassGroup)
+    ? selectedClassGroup : 'all';
   const visibleClassCount = filteredClasses.length;
-  const availableClassCount = filteredClasses.filter((cls) => cls.capacity > 0).length;
+  const availableClassCount = (activeClassGroup === 'all' ? filteredClasses : classesByGroup.get(activeClassGroup) ?? []).filter((cls) => cls.capacity > 0).length;
 
   const schoolQuery = normalizeSearch(search);
   const filteredSchools = [...schoolGroups].filter(([, { school, stores, storeIds }]) => {
@@ -263,6 +304,7 @@ function AppContent() {
     (filterAge !== 'all' ? 1 : 0);
 
   const clearFilters = () => {
+    setSelectedClassGroup('all');
     setSearch('');
     setFilterSchool(null);
     setFilterArea('all');
@@ -366,10 +408,46 @@ function AppContent() {
     browseResults('schools');
   };
 
+  const renderClassCard = (cls: ClassItem) => {
+    const scheduled = scheduledCards.get(cls.id);
+    if (scheduled) {
+      const { school, lesson } = scheduled;
+      return (
+      <ScheduledClassCard
+        key={cls.id}
+        school={school}
+        cover={classSchoolCovers.get(cls.store_id)}
+        lesson={lesson}
+        monthlyPackages={cls.monthly_packages}
+        onTrial={() => handleStartRequest(cls, 'trial')}
+        onAction={async () => {
+          const selected = { ...cls, schedule_display_cost: cls.schedule_cost ?? undefined };
+          if (cls.capacity <= 0) handleStartWaitlist(selected);
+          else handleStartRequest(selected, 'enrollment');
+          return true;
+        }}
+      />
+      );
+    }
+
+    return (
+      <ClassCard
+        key={cls.id}
+        cls={cls}
+        cover={classSchoolCovers.get(cls.store_id)}
+        onSelect={handleSelectClass}
+        onTrial={(c) => handleStartRequest(c, 'trial')}
+        onEnroll={(c) => handleStartRequest(c, 'enrollment')}
+        onWaitlist={handleStartWaitlist}
+      />
+    );
+  };
+
   const renderHome = () => (
     <>
       <Hero
         schoolsOnly={browseMode === 'schools'}
+        schoolAreas={schools.map(({ area }) => area).filter((area) => area && area !== 'Other')}
         onSearch={setSearch}
         onSearchSubmit={() => {
           if (!normalizeSearch(search)) return;
@@ -484,6 +562,16 @@ function AppContent() {
           {renderLayoutSwitch(layout, setLayout)}
         </div>
 
+        {showClassGroups && classGroups.length > 0 && (
+          <div role="group" aria-label={t('browse.groups')} className="-mt-3 mb-7 flex gap-2 overflow-x-auto py-2">
+            {[{ key: 'all' as const, items: filteredClasses }, ...classGroups].map(({ key, items }) => (
+              <button key={key} type="button" aria-pressed={activeClassGroup === key} onClick={() => setSelectedClassGroup(key)}
+                className={`shrink-0 whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${activeClassGroup === key ? 'border-[#123528] bg-[#123528] text-white' : 'border-stone-200 bg-white text-stone-700 hover:border-teal-500'}`}>
+                {t(key === 'all' ? 'browse.allGroups' : `browse.${key}`)} ({items.length})
+              </button>
+            ))}
+          </div>
+        )}
         {layout === 'list' && selectedSchool && (
           <section className="mb-8 grid gap-5 rounded-2xl border border-stone-200 bg-white p-5 sm:grid-cols-2">
             <div>
@@ -583,35 +671,32 @@ function AppContent() {
               </button>
             )}
           </div>
+        ) : showClassGroups ? (
+          <div className="space-y-10">
+            {classGroups.filter(({ key }) => activeClassGroup === 'all' || activeClassGroup === key).map(({ key, items }) => (
+              <section key={key} aria-labelledby={`classes-${key}`}>
+                <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+                  <h2 id={`classes-${key}`} className="text-xl font-bold">
+                    {t(`browse.${key}`)} <span className="text-sm font-medium text-stone-500">({items.length})</span>
+                  </h2>
+                  {activeClassGroup === 'all' && items.length > 3 && (
+                    <button type="button" onClick={() => {
+                      setSelectedClassGroup(key);
+                      setScrollToResults(true);
+                    }} className="rounded-full border border-teal-200 px-3 py-2 text-sm font-semibold text-teal-800 hover:bg-teal-50">
+                      {t('browse.moreGroup')} <span className="sr-only">{t(`browse.${key}`)}</span>
+                    </button>
+                  )}
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {(activeClassGroup === 'all' ? items.slice(0, 3) : items).map(renderClassCard)}
+                </div>
+              </section>
+            ))}
+          </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredClasses.filter((cls) => !cls.schedule_key || !cls.store).map((cls) => (
-              <ClassCard
-                key={cls.id}
-                cls={cls}
-                cover={classSchoolCovers.get(cls.store_id)}
-                onSelect={handleSelectClass}
-                onTrial={(c) => handleStartRequest(c, 'trial')}
-                onEnroll={(c) => handleStartRequest(c, 'enrollment')}
-                onWaitlist={handleStartWaitlist}
-              />
-            ))}
-            {filteredScheduledClasses.map(({ cls, school, lesson }) => (
-              <ScheduledClassCard
-                key={cls.id}
-                school={school}
-                cover={classSchoolCovers.get(cls.store_id)}
-                lesson={lesson}
-                monthlyPackages={cls.monthly_packages}
-                onTrial={() => handleStartRequest(cls, 'trial')}
-                onAction={async () => {
-                  const selected = { ...cls, schedule_display_cost: cls.schedule_cost ?? undefined };
-                  if (cls.capacity <= 0) handleStartWaitlist(selected);
-                  else handleStartRequest(selected, 'enrollment');
-                  return true;
-                }}
-              />
-            ))}
+            {filteredClasses.map(renderClassCard)}
           </div>
         )}
         {layout === 'list' && selectedSchool && (
@@ -620,7 +705,7 @@ function AppContent() {
         )}
       </section>
 
-      <HowItWorks onListSchool={openListing} onBrowseSchools={handleBrowseSchools} onViewPlans={() => goTo('school-plans')} onJoin={user ? undefined : () => goTo('student-auth')} />
+      <HowItWorks onListSchool={openListing} onBrowseSchools={handleBrowseSchools} onJoin={user ? undefined : () => goTo('student-auth')} />
     </>
   );
 
@@ -649,8 +734,6 @@ function AppContent() {
 
   const renderView = () => {
     switch (view) {
-      case 'school-plans':
-        return <SchoolPlansPage onBack={() => goTo('browse')} />;
       case 'detail':
         return selectedClass && (
           <ClassDetail
@@ -760,6 +843,7 @@ function AppContent() {
         }}
         onListSchool={openListing}
         onBrowseClasses={() => {
+          setSelectedClassGroup('all');
           schoolAccountOrigin.current = null;
           setFilterSchool(null);
           setLayout('list');
