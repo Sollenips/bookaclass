@@ -19,6 +19,7 @@ import { AuthPage } from '@/components/AuthPage';
 import { AdminDashboard } from '@/components/AdminDashboard';
 import { StudioOwnerDashboard } from '@/components/StudioOwnerDashboard';
 import { CATEGORY_COLORS, matchesInterest } from '@/lib/constants';
+import { areasMatch } from '@/lib/areas';
 import { AccessibilityProvider } from '@/lib/accessibility';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { I18nProvider, useI18n } from '@/lib/i18n';
@@ -213,7 +214,7 @@ function AppContent() {
     const q = normalizeSearch(search);
     return classes.filter((cls) => {
       if (selectedSchool && !selectedSchool.storeIds.has(cls.store_id)) return false;
-      if (filterArea !== 'all' && cls.store?.area !== filterArea) return false;
+      if (filterArea !== 'all' && !areasMatch(cls.store?.area, filterArea)) return false;
       if (selectedClassGroup && classGroup(cls) !== selectedClassGroup) return false;
       if (!matchesInterest(filterCategory, cls.category, cls.title)) return false;
       if (!matchesAge(cls, filterAge)) return false;
@@ -246,8 +247,7 @@ function AppContent() {
   const availableClassCount = filteredClasses.filter((cls) => cls.capacity > 0).length;
   const schoolQuery = normalizeSearch(search);
   const filteredSchools = [...schoolGroups].filter(([, { school, stores, storeIds }]) => {
-    const schoolArea = school.area === 'Vyronas' ? 'Vironas' : school.area;
-    if (filterArea !== 'all' && schoolArea !== filterArea) return false;
+    if (filterArea !== 'all' && !areasMatch(school.area, filterArea)) return false;
     const matchesSchoolQuery = includesSearch(schoolQuery, school.name, tArea(school.area), school.address);
     if (filterAge === 'all' && stores.some((entry) => matchesInterest(filterCategory, entry.category)
       && (matchesSchoolQuery || includesSearch(schoolQuery, entry.category, tCat(entry.category, 'el'), tCat(entry.category, 'en'))))) return true;
@@ -260,7 +260,7 @@ function AppContent() {
 
   const mapSchools = [...schoolGroups].flatMap(([key, group]) => {
     if (filterSchool && key !== filterSchool) return [];
-    if (filterArea !== 'all' && group.school.area !== filterArea) return [];
+    if (filterArea !== 'all' && !areasMatch(group.school.area, filterArea)) return [];
 
     const matchingClasses = filteredClasses.filter((cls) => group.storeIds.has(cls.store_id));
     const matchesSchool = filterAge === 'all'

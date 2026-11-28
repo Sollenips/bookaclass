@@ -43,6 +43,14 @@
   .hero-collage__tile--guitar {
     display: block;
   }
+
+  .hero-collage__bow {
+    top: 6px;
+    left: 6px;
+    width: clamp(44px, 12vw, 64px);
+    transform-origin: top left;
+    transform: rotate(12deg);
+  }
 }
 
 .hero-collage__frame {

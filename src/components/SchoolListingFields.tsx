@@ -3,6 +3,7 @@ import { useId, useState, type Dispatch, type SetStateAction } from 'react';
 import { Accessibility, Plus, Trash2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { ImageUploadField } from '@/components/ImageUploadField';
+import { SchoolAddressPicker } from '@/components/SchoolAddressPicker';
 import { studioInputCls, studioLabelCls } from '@/lib/studioForm';
 import {
   LISTING_AREAS,
@@ -86,7 +87,7 @@ export function SchoolListingFields({ values, onChange, onImageUploadingChange, 
           <label htmlFor={areaId} className={studioLabelCls}>{t('lf.area')}</label>
           <select id={areaId} value={usesCustomArea ? 'Other' : values.area} onChange={(event) => {
             setCustomAreaSelected(event.target.value === 'Other');
-            textOf('area')(event);
+            onChange((current) => ({ ...current, area: event.target.value, latitude: null, longitude: null }));
           }} required className={studioInputCls}>
             <option value="" disabled>{t('lf.selectArea')}</option>
             {LISTING_AREAS.map((area) => (
@@ -98,7 +99,7 @@ export function SchoolListingFields({ values, onChange, onImageUploadingChange, 
               <span className={studioLabelCls}>{t('lf.customArea')}</span>
               <input value={values.area === 'Other' ? '' : values.area} onChange={(event) => {
                 setCustomAreaSelected(true);
-                textOf('area')(event);
+                onChange((current) => ({ ...current, area: event.target.value, latitude: null, longitude: null }));
               }} required pattern=".*\S.*" maxLength={100} className={studioInputCls} />
             </label>
           )}
@@ -106,8 +107,18 @@ export function SchoolListingFields({ values, onChange, onImageUploadingChange, 
       </div>
 
       <div>
-        <label className={studioLabelCls}>{t('lf.address')}</label>
-        <input value={values.address} onChange={textOf('address')} required className={studioInputCls} />
+        <SchoolAddressPicker
+          address={values.address}
+          area={values.area}
+          latitude={values.latitude}
+          longitude={values.longitude}
+          onAddressChange={(address) => onChange((current) => ({ ...current, address, latitude: null, longitude: null }))}
+          onPointChange={(point) => onChange((current) => ({
+            ...current,
+            latitude: point?.latitude ?? null,
+            longitude: point?.longitude ?? null,
+          }))}
+        />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

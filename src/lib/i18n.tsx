@@ -589,6 +589,11 @@ const dict: Dict = {
   'listing.securityLoading': { en: 'Loading Cloudflare verification…', el: 'Φόρτωση επαλήθευσης Cloudflare…' },
   'listing.error': { en: 'Something went wrong. Please try again.', el: 'Κάτι πήγε στραβά. Δοκιμάστε ξανά.' },
   'listing.privacy': { en: 'We only use these details to contact you about your listing.', el: 'Χρησιμοποιούμε αυτά τα στοιχεία μόνο για να επικοινωνήσουμε μαζί σας για την καταχώρισή σας.' },
+  'listing.locationRequired': { en: 'Choose an address suggestion or place the pin on the map.', el: 'Επίλεξε μια πρόταση διεύθυνσης ή όρισε το pin στον χάρτη.' },
+  'listing.addressSearching': { en: 'Searching addresses…', el: 'Αναζήτηση διευθύνσεων…' },
+  'listing.addressHelp': { en: 'Choose the matching address, or set the pin yourself on the map.', el: 'Διάλεξε τη σωστή διεύθυνση ή όρισε εσύ το pin στον χάρτη.' },
+  'listing.addressSelected': { en: 'Location selected. Drag the pin to adjust it.', el: 'Η θέση επιλέχθηκε. Σύρε το pin για να τη διορθώσεις.' },
+  'listing.addressPinRequired': { en: 'Choose a suggestion or click the map to set the school location.', el: 'Διάλεξε μια πρόταση ή πάτησε στον χάρτη για να ορίσεις τη θέση της σχολής.' },
   'listing.close': { en: 'Close', el: 'Κλείσιμο' },
 
   // "List Your School" form (same wording as the Coming Soon page)

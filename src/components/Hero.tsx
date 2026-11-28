@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarCheck, Clock3, Search, Sparkles, X } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
-import { AREAS, INTEREST_OPTIONS } from '@/lib/constants';
+import { INTEREST_OPTIONS } from '@/lib/constants';
+import { filterAreaOptions } from '@/lib/areas';
 import './HeroCollage.css';
 import './HolidayTree.css';
 
@@ -132,9 +133,9 @@ export function Hero({
                 </span>
                 <select value={filterArea} onChange={(e) => setFilterArea(e.target.value)} className={selectClass}>
                   <option value="all">{t('filter.allAreas')}</option>
-                  {[...new Set([...AREAS, ...schoolAreas])].map((area) => (
-                    <option key={area} value={area}>
-                      {tArea(area)}
+                  {filterAreaOptions(schoolAreas).map(({ value, key }) => (
+                    <option key={value} value={value}>
+                      {key ? t(`lf.${key}`) : tArea(value)}
                     </option>
                   ))}
                 </select>

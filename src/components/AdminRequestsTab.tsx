@@ -19,7 +19,7 @@ import {
 import { supabase, type PreRegistration } from '@/lib/supabase';
 import { CATEGORIES } from '@/lib/constants';
 import { useI18n } from '@/lib/i18n';
-import { geocodeAddress } from '@/lib/geocode';
+import { geocodeAddress, type GeoPoint } from '@/lib/geocode';
 import { schoolApplicationPhotoUrl } from '@/lib/studioImageUpload';
 import { planClasses, scheduledClassFields, requestScheduleRows, type PlannedClass } from '@/lib/schoolPublish';
 import { StudioRequestEditModal } from '@/components/StudioRequestEditModal';
@@ -99,7 +99,12 @@ export function AdminRequestsTab({ requests, rejected = [], onChanged, onFlash }
     }
     const existingId: string | null = found.data?.[0]?.id ?? null;
 
-    const point = existingId ? null : await geocodeAddress(address, area);
+    let point: GeoPoint | null = null;
+    if (!existingId) {
+      point = req.latitude != null && req.longitude != null
+        ? { latitude: req.latitude, longitude: req.longitude }
+        : await geocodeAddress(address, area);
+    }
 
     // 1) prepare the school (skipped when it already exists)
     let storeId: string | null = existingId;

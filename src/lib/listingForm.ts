@@ -158,6 +158,8 @@ export type ListingFormValues = {
   category: string;
   area: string;
   address: string;
+  latitude: number | null;
+  longitude: number | null;
   phone: string;
   email: string;
   image_url: string;
@@ -181,6 +183,8 @@ export function emptyListingValues(): ListingFormValues {
     category: '',
     area: '',
     address: '',
+    latitude: null,
+    longitude: null,
     phone: '',
     email: '',
     image_url: '',

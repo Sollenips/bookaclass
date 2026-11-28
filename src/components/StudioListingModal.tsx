@@ -59,6 +59,8 @@ async function submitSchoolApplication(form: ListingFormValues, token: string) {
     area: form.area.trim(),
     category: APPLICATION_CATEGORIES[form.category] ?? form.category,
     address: form.address.trim(),
+    latitude: form.latitude == null ? '' : String(form.latitude),
+    longitude: form.longitude == null ? '' : String(form.longitude),
     school_manager: form.school_manager.trim(),
     accessibility: form.accessibility_info.trim(),
     privacy_acknowledged: 'yes',
@@ -152,6 +154,11 @@ export function StudioListingModal({ open, onClose }: Props) {
     if (form.schedule.some((row) => row.lesson.trim() && !row.day.trim())) {
       setStatus('error');
       setErrorMsg(t('sched.dayRequired'));
+      return;
+    }
+    if (form.latitude == null || form.longitude == null) {
+      setStatus('error');
+      setErrorMsg(t('listing.locationRequired'));
       return;
     }
     setStatus('submitting');
