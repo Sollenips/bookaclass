@@ -589,11 +589,10 @@ const dict: Dict = {
   'listing.securityLoading': { en: 'Loading Cloudflare verification…', el: 'Φόρτωση επαλήθευσης Cloudflare…' },
   'listing.error': { en: 'Something went wrong. Please try again.', el: 'Κάτι πήγε στραβά. Δοκιμάστε ξανά.' },
   'listing.privacy': { en: 'We only use these details to contact you about your listing.', el: 'Χρησιμοποιούμε αυτά τα στοιχεία μόνο για να επικοινωνήσουμε μαζί σας για την καταχώρισή σας.' },
-  'listing.locationRequired': { en: 'Choose an address suggestion or place the pin on the map.', el: 'Επίλεξε μια πρόταση διεύθυνσης ή όρισε το pin στον χάρτη.' },
   'listing.addressSearching': { en: 'Searching addresses…', el: 'Αναζήτηση διευθύνσεων…' },
-  'listing.addressHelp': { en: 'Choose the matching address, or set the pin yourself on the map.', el: 'Διάλεξε τη σωστή διεύθυνση ή όρισε εσύ το pin στον χάρτη.' },
-  'listing.addressSelected': { en: 'Location selected. Drag the pin to adjust it.', el: 'Η θέση επιλέχθηκε. Σύρε το pin για να τη διορθώσεις.' },
-  'listing.addressPinRequired': { en: 'Choose a suggestion or click the map to set the school location.', el: 'Διάλεξε μια πρόταση ή πάτησε στον χάρτη για να ορίσεις τη θέση της σχολής.' },
+  'listing.addressHelp': { en: 'Type the address and choose the matching suggestion. The pin is placed automatically.', el: 'Γράψε τη διεύθυνση και επίλεξε τη σωστή πρόταση. Η πινέζα τοποθετείται αυτόματα.' },
+  'listing.addressSelected': { en: 'Location found. The pin will appear automatically on the map.', el: 'Η θέση βρέθηκε. Η πινέζα θα εμφανιστεί αυτόματα στον χάρτη.' },
+  'listing.addressPinRequired': { en: 'We look up the address automatically. If no match is found, you can still submit it for review.', el: 'Αναζητούμε αυτόματα τη διεύθυνση. Αν δεν βρεθεί, μπορείς να στείλεις την αίτηση για έλεγχο.' },
   'listing.close': { en: 'Close', el: 'Κλείσιμο' },
 
   // "List Your School" form (same wording as the Coming Soon page)

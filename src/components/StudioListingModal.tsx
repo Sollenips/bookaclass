@@ -156,11 +156,6 @@ export function StudioListingModal({ open, onClose }: Props) {
       setErrorMsg(t('sched.dayRequired'));
       return;
     }
-    if (form.latitude == null || form.longitude == null) {
-      setStatus('error');
-      setErrorMsg(t('listing.locationRequired'));
-      return;
-    }
     setStatus('submitting');
     setErrorMsg('');
 

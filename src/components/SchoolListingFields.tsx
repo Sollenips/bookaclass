@@ -1,5 +1,5 @@
 import { ScheduleAvailabilityInput, ScheduleCostInput, ScheduleDaysInput, ScheduleDayTimesInput } from '@/components/ScheduleInputs';
-import { useId, useState, type Dispatch, type SetStateAction } from 'react';
+import { useCallback, useId, useState, type Dispatch, type SetStateAction } from 'react';
 import { Accessibility, Plus, Trash2 } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { ImageUploadField } from '@/components/ImageUploadField';
@@ -34,6 +34,16 @@ export function SchoolListingFields({ values, onChange, onImageUploadingChange, 
   const areaId = useId();
   const [customAreaSelected, setCustomAreaSelected] = useState(false);
   const usesCustomArea = customAreaSelected || Boolean(values.area && (values.area === 'Other' || !LISTING_AREAS.some(({ value }) => value === values.area)));
+  const updateAddress = useCallback((address: string) => {
+    onChange((current) => ({ ...current, address, latitude: null, longitude: null }));
+  }, [onChange]);
+  const updatePoint = useCallback((point: { latitude: number; longitude: number } | null) => {
+    onChange((current) => ({
+      ...current,
+      latitude: point?.latitude ?? null,
+      longitude: point?.longitude ?? null,
+    }));
+  }, [onChange]);
 
   const textOf =
     (field: TextField) =>
@@ -112,12 +122,8 @@ export function SchoolListingFields({ values, onChange, onImageUploadingChange, 
           area={values.area}
           latitude={values.latitude}
           longitude={values.longitude}
-          onAddressChange={(address) => onChange((current) => ({ ...current, address, latitude: null, longitude: null }))}
-          onPointChange={(point) => onChange((current) => ({
-            ...current,
-            latitude: point?.latitude ?? null,
-            longitude: point?.longitude ?? null,
-          }))}
+          onAddressChange={updateAddress}
+          onPointChange={updatePoint}
         />
       </div>
 

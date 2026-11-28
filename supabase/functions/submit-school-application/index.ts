@@ -110,9 +110,11 @@ Deno.serve(async (req) => {
     return respond("Please complete all required fields", 400, origin);
   }
   if (value("privacy_acknowledged") !== "yes") return respond("Privacy consent required", 400, origin);
-  if (!latitudeText || !longitudeText ||
-      !Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
-      !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+  const hasLatitude = Boolean(latitudeText);
+  const hasLongitude = Boolean(longitudeText);
+  if (hasLatitude !== hasLongitude ||
+      (hasLatitude && (!Number.isFinite(latitude) || latitude < -90 || latitude > 90)) ||
+      (hasLongitude && (!Number.isFinite(longitude) || longitude < -180 || longitude > 180))) {
     return respond("Select the school location on the map", 400, origin);
   }
 
@@ -170,8 +172,8 @@ Deno.serve(async (req) => {
       category,
       area,
       address,
-      latitude,
-      longitude,
+      latitude: hasLatitude ? latitude : null,
+      longitude: hasLongitude ? longitude : null,
       phone,
       school_manager: manager,
       description,

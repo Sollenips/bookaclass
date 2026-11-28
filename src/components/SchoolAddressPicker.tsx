@@ -1,7 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, MapPin } from 'lucide-react';
 import { useI18n } from '@/lib/i18n';
 import { studioInputCls, studioLabelCls } from '@/lib/studioForm';
@@ -23,13 +20,6 @@ type PhotonFeature = {
   };
 };
 type Suggestion = { label: string; point: Point };
-
-const pinIcon = L.divIcon({
-  className: '',
-  html: '<div class="h-7 w-7 rounded-full border-[3px] border-white bg-teal-600 shadow-lg"></div>',
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-});
 
 const areaCenters: Record<string, [number, number]> = {
   Pagrati: [37.969, 23.744], Vironas: [37.961, 23.752], Kaisariani: [37.964, 23.767],
@@ -63,19 +53,6 @@ function formatFeature(feature: PhotonFeature): Suggestion | null {
   return { label: parts.join(', '), point: { latitude, longitude } };
 }
 
-function PinClickHandler({ onChoose }: { onChoose: (point: Point) => void }) {
-  useMapEvents({ click: (event) => onChoose({ latitude: event.latlng.lat, longitude: event.latlng.lng }) });
-  return null;
-}
-
-function RecenterSelectedPoint({ point }: { point: Point | null }) {
-  const map = useMap();
-  useEffect(() => {
-    if (point) map.setView([point.latitude, point.longitude], Math.max(map.getZoom(), 16));
-  }, [map, point?.latitude, point?.longitude]);
-  return null;
-}
-
 export function SchoolAddressPicker({
   address,
   area,
@@ -95,8 +72,17 @@ export function SchoolAddressPicker({
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [searching, setSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [autoPinForAddress, setAutoPinForAddress] = useState(latitude == null || longitude == null);
+  const previousArea = useRef(area);
   const selectedPoint = latitude != null && longitude != null ? { latitude, longitude } : null;
   const center = useMemo<[number, number]>(() => areaCenters[area] ?? [37.9838, 23.7275], [area]);
+
+  useEffect(() => {
+    if (previousArea.current !== area) {
+      previousArea.current = area;
+      setAutoPinForAddress(true);
+    }
+  }, [area]);
 
   useEffect(() => {
     const query = address.trim();
@@ -123,7 +109,9 @@ export function SchoolAddressPicker({
         const response = await fetch(`https://photon.komoot.io/api/?${params}`, { signal: controller.signal });
         if (!response.ok) throw new Error('Address search failed');
         const data = await response.json() as { features?: PhotonFeature[] };
-        setSuggestions((data.features ?? []).map(formatFeature).filter((item): item is Suggestion => item !== null));
+        const matches = (data.features ?? []).map(formatFeature).filter((item): item is Suggestion => item !== null);
+        setSuggestions(matches);
+        if (autoPinForAddress && matches[0]) onPointChange(matches[0].point);
       } catch (error) {
         if (!(error instanceof DOMException && error.name === 'AbortError')) setSuggestions([]);
       } finally {
@@ -135,9 +123,10 @@ export function SchoolAddressPicker({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [address, area, center, lang]);
+  }, [address, area, autoPinForAddress, center, lang, onPointChange]);
 
   const chooseSuggestion = (suggestion: Suggestion) => {
+    setAutoPinForAddress(false);
     onAddressChange(suggestion.label);
     onPointChange(suggestion.point);
     setSuggestions([]);
@@ -147,10 +136,11 @@ export function SchoolAddressPicker({
   return (
     <div>
       <label className={studioLabelCls}>{t('lf.address')}</label>
-      <div className="relative">
+      <div className="relative z-[1100]">
         <input
           value={address}
           onChange={(event) => {
+            setAutoPinForAddress(true);
             onAddressChange(event.target.value);
             onPointChange(null);
             setShowSuggestions(true);
@@ -164,7 +154,7 @@ export function SchoolAddressPicker({
           aria-expanded={showSuggestions && suggestions.length > 0}
         />
         {showSuggestions && (searching || suggestions.length > 0) && (
-          <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
+          <div className="absolute z-[1101] mt-1 w-full overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
             {searching && (
               <div className="flex items-center gap-2 px-3 py-2 text-xs text-stone-500">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />{t('listing.addressSearching')}
@@ -186,29 +176,8 @@ export function SchoolAddressPicker({
         )}
       </div>
       <p className="mt-1.5 text-xs text-stone-500">{t('listing.addressHelp')}</p>
-
-      <div className="mt-3 overflow-hidden rounded-xl border border-stone-200">
-        <MapContainer key={area} center={selectedPoint ? [selectedPoint.latitude, selectedPoint.longitude] : center} zoom={selectedPoint ? 17 : 14} className="h-56 w-full" scrollWheelZoom>
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <RecenterSelectedPoint point={selectedPoint} />
-          <PinClickHandler onChoose={onPointChange} />
-          {selectedPoint && (
-            <Marker
-              position={[selectedPoint.latitude, selectedPoint.longitude]}
-              icon={pinIcon}
-              draggable
-              eventHandlers={{ dragend: (event) => {
-                const position = event.target.getLatLng();
-                onPointChange({ latitude: position.lat, longitude: position.lng });
-              } }}
-            />
-          )}
-        </MapContainer>
-      </div>
-      <p className={`mt-1.5 text-xs ${selectedPoint ? 'text-teal-700' : 'text-amber-700'}`}>
+      <p className={`mt-1.5 flex items-center gap-1.5 text-xs ${selectedPoint ? 'text-teal-700' : 'text-amber-700'}`}>
+        <MapPin className="h-3.5 w-3.5 shrink-0" />
         {selectedPoint ? t('listing.addressSelected') : t('listing.addressPinRequired')}
       </p>
     </div>
